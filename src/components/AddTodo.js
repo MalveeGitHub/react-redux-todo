@@ -1,6 +1,5 @@
 import React, { Component } from "react";
-import { addTodo } from "../action/TodoAction";
-import { connect } from "react-redux";
+import { firestoreConnect } from "react-redux-firebase";
 
 class AddTodo extends Component {
   state = {
@@ -8,8 +7,13 @@ class AddTodo extends Component {
   };
   handleSubmit = e => {
     e.preventDefault();
-    const data = this.state.todo;
-    this.props.addTodo(data);
+    const data = {
+      title: this.state.todo
+    };
+    const { firestore } = this.props;
+
+    firestore.add({ collection: "todo" }, data);
+    this.setState({ todo: "" });
   };
   render() {
     return (
@@ -25,7 +29,4 @@ class AddTodo extends Component {
   }
 }
 
-export default connect(
-  null,
-  { addTodo }
-)(AddTodo);
+export default firestoreConnect()(AddTodo);

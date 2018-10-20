@@ -1,7 +1,8 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
-import { getTodo } from "../action/TodoAction";
-import { deleteTodo, updateTodo } from "../action/TodoAction";
+import { firestoreConnect } from "react-redux-firebase";
+import { compose } from "redux";
+import { Link } from "react-router-dom";
 
 class Todo extends Component {
   state = {
@@ -9,27 +10,22 @@ class Todo extends Component {
     id: "",
     newInput: ""
   };
-  componentDidMount() {
-    this.props.getTodo();
-  }
-
-  deleteItem(id) {
-    this.props.deleteTodo(id);
-  }
-  updateEdit = id => {
-    this.setState({
-      edit: !this.state.edit,
-      id
-    });
-  };
   updateTodo = (id, e) => {
     e.preventDefault();
     const NewTodo = this.state.newInput;
     this.props.updateTodo(id, NewTodo);
     this.setState({ edit: false });
   };
+
+  deleteTodo(id) {
+    const { firestore } = this.props;
+
+    firestore.delete({ collection: "todo", doc: id });
+  }
+
   render() {
     const books = this.props.books;
+
     var edit = "";
     if (this.state.id !== "") {
       books.map(book => {
@@ -48,37 +44,40 @@ class Todo extends Component {
         }
       });
     }
+    if (books) {
+      console.log(books);
+      return (
+        <div className="container text-center text-light">
+          <h1 className="">Todo List (Made by M.Alvee)</h1>
 
-    return (
-      <div className="container text-center text-light">
-        <h1 className="">Todo List (Made by M.Alvee)</h1>
-
-        <ul class="list-group text-dark my-2">
-          {this.state.edit == false
-            ? books.map(book => (
-                <li className="list-group-item">
-                  {" "}
-                  {book.title}{" "}
-                  <a
-                    onClick={this.updateEdit.bind(this, book.id)}
-                    href="#!"
-                    className="float-right ml-3"
-                  >
-                    <i class="fas fa-marker" />
-                  </a>
-                  <a
-                    href="#!"
-                    className="float-right"
-                    onClick={this.deleteItem.bind(this, book.id)}
-                  >
-                    <i class="far fa-trash-alt" />
-                  </a>{" "}
-                </li>
-              ))
-            : edit}
-        </ul>
-      </div>
-    );
+          <ul class="list-group text-dark my-2">
+            {this.state.edit == false
+              ? books.map(book => (
+                  <li className="list-group-item">
+                    {" "}
+                    {book.title}{" "}
+                    <Link
+                      to={`/edit/${book.id}/${book.title}`}
+                      className="float-right ml-3"
+                    >
+                      <i class="fas fa-marker" />
+                    </Link>
+                    <a
+                      onClick={this.deleteTodo.bind(this, book.id)}
+                      href="#!"
+                      className="float-right"
+                    >
+                      <i class="far fa-trash-alt" />
+                    </a>{" "}
+                  </li>
+                ))
+              : edit}
+          </ul>
+        </div>
+      );
+    } else {
+      return <h1>Loading</h1>;
+    }
   }
 }
 
@@ -88,7 +87,9 @@ const mapStateToProps = state => {
   };
 };
 
-export default connect(
-  mapStateToProps,
-  { getTodo, deleteTodo, updateTodo }
+export default compose(
+  firestoreConnect([{ collection: "todo" }]),
+  connect(state => ({
+    books: state.firestore.ordered.todo
+  }))
 )(Todo);
